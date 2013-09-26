@@ -26,7 +26,10 @@ class FlightsController < ApplicationController
         data = @flights.includes(:depart_airport, :arrive_airport).map do |flight|
           flight.attributes.merge({
             depart_airport: flight.depart_airport.iata,
-            arrive_airport: flight.arrive_airport.iata
+            arrive_airport: flight.arrive_airport.iata,
+            depart_date: l(flight.depart_date, format: "%d %B %Yг."),
+            depart_time: l(flight.depart_time, format: "%H:%M"),
+            arrive_time: l(flight.arrive_time, format: "%H:%M"),
           })
         end
         total_records = Flight.count

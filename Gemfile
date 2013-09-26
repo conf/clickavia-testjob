@@ -50,6 +50,8 @@ gem 'rails-backbone'
 gem 'rest-client'
 gem 'nokogiri'
 
+gem 'russian', '~> 0.6.0'
+
 group :development do
   gem 'thin'
 end
