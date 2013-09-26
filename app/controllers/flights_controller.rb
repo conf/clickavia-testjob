@@ -1,5 +1,7 @@
 class FlightsController < ApplicationController
   PAGE_SIZE = 10
+  SORTABLE_FIELDS = ["depart_date", "depart_time", "arrive_time", "seats_status"]
+
   def index
     respond_to do |format|
       format.html
@@ -7,23 +9,18 @@ class FlightsController < ApplicationController
         offset = params[:iDisplayStart].to_i || PAGE_SIZE
         limit = params[:iDisplayLength].to_i || 0
 
+        initialize_fields(params)
+        filters = get_search_filters
+        order_by = get_order_by_clauses
+
         @flights = Flight.limit(limit).offset(offset)
 
-        fields = []
-        filters = []
-        params.each do |key, val|
-          if key.to_s.start_with? 'mDataProp'
-            position = key.split('_').last.to_i
-            fields[position] = val
-          end
-
-          if key.to_s.start_with? 'sSearch'
-            position = key.split('_').last.to_i
-            filters[position] = val
-          end
+        filters.each do |field, value|
+          @flights = @flights.where(field => value)
         end
-        fields.zip(filters).select {|arr| arr.all?(&:present?) }.each do |filter|
-          @flights = @flights.where(filter.first => filter.last)
+
+        order_by.reverse.each do |field, value|
+          @flights = @flights.order("#{field} #{value}")
         end
 
         data = @flights.includes(:depart_airport, :arrive_airport).map do |flight|
@@ -43,4 +40,36 @@ class FlightsController < ApplicationController
       end
     end
   end
+
+  private
+  def initialize_fields(params)
+    @params = params
+    fields = get_fields_by_prefix('mDataProp_')
+    @field_names = Hash[(0...fields.length).zip fields]
+  end
+
+  def get_fields_by_prefix(prefix)
+    names = @params.keys.select { |key| key.to_s.start_with? prefix }.sort
+    @params.values_at(*names)
+  end
+
+  def get_order_by_clauses
+    name_indices = get_fields_by_prefix('iSortCol_').map(&:to_i)
+    names = @field_names.values_at(*name_indices) & SORTABLE_FIELDS
+
+    directions = get_fields_by_prefix('sSortDir_')
+
+    if names.length == directions.length
+      names.zip directions
+    else
+      []
+    end
+  end
+
+  def get_search_filters
+    search_filters = @field_names.values.zip get_fields_by_prefix('sSearch_')
+    # filter empty values
+    search_filters.reject { |code, value| value.empty?}
+  end
+
 end
