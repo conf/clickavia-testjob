@@ -6,9 +6,17 @@
       %th
         %input{type: 'search', name: 'code'}
       %th
+        / depart date fields
+        %div.depart_date
+          %input.from{ placeholder: 'From' }
+          %input.to{ placeholder: 'To' }
       %th
+        %input{type: 'text', name: 'depart_time'}
       %th
+        %input{type: 'text', name: 'arrive_time'}
       %th
+        - seats_status = Flight.uniq.pluck(:seats_status).unshift(['- select seats filter -', ''])
+        = select_tag(:seats_status, options_for_select(seats_status))
     %tr
       %th Аэропорт вылета
       %th Аэропорт прилета

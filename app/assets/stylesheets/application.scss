@@ -9,10 +9,22 @@
  * compiled file, but it's generally better to create a new file per style scope.
  *
  *= require jquery.dataTables
+ *= require jquery.ui.smoothness
  *= require_self
  *= require_tree .
  */
 body {
 	width: 960px;
 	margin: 0 auto;
+}
+
+.depart_date {
+  width: 200px;
+  input {
+    width: 40%;
+    float: left;
+  }
+  .to {
+    float: right;
+  }
 }
