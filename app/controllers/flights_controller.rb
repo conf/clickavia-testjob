@@ -6,8 +6,8 @@ class FlightsController < ApplicationController
     respond_to do |format|
       format.html
       format.json do
-        offset = params[:iDisplayStart].to_i || PAGE_SIZE
-        limit = params[:iDisplayLength].to_i || 0
+        offset = params[:iDisplayStart].to_i || 0
+        limit = params[:iDisplayLength].to_i || PAGE_SIZE
 
         initialize_fields(params)
         filters = get_search_filters
