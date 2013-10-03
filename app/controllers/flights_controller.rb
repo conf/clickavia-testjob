@@ -1,45 +1,36 @@
 class FlightsController < ApplicationController
   PAGE_SIZE = 10
+  SORTABLE_FIELDS = ["depart_date", "depart_time", "arrive_time", "seats_status"]
+
   def index
     respond_to do |format|
       format.html
       format.json do
-        offset = params[:iDisplayStart].to_i || PAGE_SIZE
-        limit = params[:iDisplayLength].to_i || 0
+        dt_adapter = DataTableAdapter.new(params)
 
-        @flights = Flight.limit(limit).offset(offset)
+        @flights = Flight.limit(dt_adapter.limit(PAGE_SIZE)).offset(dt_adapter.offset)
 
-        fields = []
-        filters = []
-        params.each do |key, val|
-          if key.to_s.start_with? 'mDataProp'
-            position = key.split('_').last.to_i
-            fields[position] = val
-          end
-
-          if key.to_s.start_with? 'sSearch'
-            position = key.split('_').last.to_i
-            filters[position] = val
-          end
+        dt_adapter.get_filters.each do |field, value|
+          @flights = field.include?('=') ? @flights.where(field, value) : @flights.where(field => value)
         end
-        fields.zip(filters).select {|arr| arr.all?(&:present?) }.each do |filter|
-          @flights = @flights.where(filter.first => filter.last)
+
+        # reverse our order_by clauses since Rails applies them in reverse order
+        dt_adapter.get_order_by(SORTABLE_FIELDS).reverse.each do |field, value|
+          @flights = @flights.order("#{field} #{value}")
         end
 
         data = @flights.includes(:depart_airport, :arrive_airport).map do |flight|
           flight.attributes.merge({
             depart_airport: flight.depart_airport.iata,
-            arrive_airport: flight.arrive_airport.iata
+            arrive_airport: flight.arrive_airport.iata,
+            depart_date: l(flight.depart_date, format: "%d %B %Yг."),
+            depart_time: l(flight.depart_time, format: "%H:%M"),
+            arrive_time: l(flight.arrive_time, format: "%H:%M"),
           })
         end
-        total_records = Flight.count
-        total_display_records = @flights.except(:limit, :offset).count
-        render json: {
-          sEcho: params[:sEcho].to_i,
-          iTotalRecords: total_records,
-          iTotalDisplayRecords: total_display_records,
-          aaData: data
-        }
+
+        render dt_adapter.get_json(@flights, data)
+
       end
     end
   end

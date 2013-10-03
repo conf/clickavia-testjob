@@ -17,5 +17,7 @@ module ClickaviaTestJob
     # config.i18n.default_locale = :de
 
     config.autoload_paths += Dir["#{config.root}/lib/**/"]
+
+    config.i18n.default_locale = :ru
   end
 end
